@@ -1,0 +1,46 @@
+#include "Arduino.h"
+
+// Library for the M5Core2 Module
+#include "M5Unified.h"
+
+uint16_t headColor = lgfx::v1::color565(77,163,179);
+uint16_t antColor1 = lgfx::v1::color565(77,163,179);
+uint16_t antColor2 = lgfx::v1::color565(77,163,179);
+uint16_t antColor3 = lgfx::v1::color565(77,163,179);
+uint16_t mouthColor = lgfx::v1::color565(255,255,255);
+uint16_t teethColor = lgfx::v1::color565(181,181,181);
+uint16_t earColor = lgfx::v1::color565(77,163,179);
+uint16_t eyeColor1 = lgfx::v1::color565(255,255,255);
+uint16_t eyeColor2 = lgfx::v1::color565(77,163,179);
+uint16_t eyeColor3 = lgfx::v1::color565(3,3,3);
+uint16_t backroundColor = lgfx::v1::color565(255,255,255);
+
+
+void setup() {
+  // Initialize the M5Core2
+  auto cfg = M5.config();
+  M5.begin(cfg);
+}
+
+void loop() {
+
+  M5.Lcd.fillScreen(backroundColor);
+  M5.Lcd.fillRoundRect(68,100,183,85,12.5,earColor);
+  M5.Lcd.fillRoundRect(80,70,159,159,25,headColor);
+  M5.Lcd.fillCircle(159.5,70,17,antColor1);
+  M5.Lcd.fillRect(157,20,5,33,antColor2);
+  M5.Lcd.fillCircle(159.5,20,5,antColor3);
+  M5.Lcd.fillRoundRect(100,185,119,20,10,mouthColor);
+  M5.Lcd.drawFastVLine(119.5,185,20,teethColor);
+  M5.Lcd.drawFastVLine(139.3,185,20,teethColor);
+  M5.Lcd.drawFastVLine(159.1,185,20,teethColor);
+  M5.Lcd.drawFastVLine(178.9,185,20,teethColor);
+  M5.Lcd.drawFastVLine(198.7,185,20,teethColor);
+  M5.Lcd.fillCircle(120,125,20,eyeColor1);
+  M5.Lcd.fillCircle(199,125,20,eyeColor1);
+  M5.Lcd.fillCircle(199,125,12,eyeColor2);
+  M5.Lcd.fillCircle(120,125,12,eyeColor2);
+  M5.Lcd.fillCircle(199,125,9,eyeColor3);
+  M5.Lcd.fillCircle(120,125,9,eyeColor3);
+  delay(1000);
+}
