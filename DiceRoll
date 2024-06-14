@@ -1,0 +1,141 @@
+#include "Arduino.h"
+
+// Library for the M5Core2 Module
+#include "M5Unified.h"
+
+#define DOT_MARGIN 10
+#define DOT_RADIUS 10 // diameter = 20
+#define SCREEN_DIST 40
+
+uint16_t bgColor = lgfx::v1::color565(3,3,3);
+uint16_t tColor = lgfx::v1::color565(255,255,255);
+uint16_t dieColor = lgfx::v1::color565(255,255,255);
+uint16_t dotColor = lgfx::v1::color565(255,255,255);
+
+int tSize = 2;
+int tSizeRoll = 3;
+int tSizeIntro = 3;
+int tSizeCheese = 1;
+
+float accX, accY, accZ;
+
+void introScreen(){
+  M5.Lcd.setTextSize(tSizeIntro);
+  M5.Lcd.setTextColor(tColor);
+  M5.Lcd.setCursor(0,0);
+  M5.Lcd.print("\nTo Roll the Dice \nShake the M5Core2\n\n");
+  M5.Lcd.print("Created by \nAlex Hardcopf\n");
+}
+
+bool isShaking(){
+  M5.Imu.getAccelData(&accX, &accY, &accZ);
+  float totalAcc = sqrt(accX * accX + accY * accY + accZ * accZ);
+  return totalAcc > 2.0;
+}
+
+void displayRoll(){
+  M5.Lcd.fillScreen(bgColor);
+  M5.Lcd.setTextSize(tSizeRoll);
+  M5.Lcd.setTextColor(tColor);
+  M5.Lcd.setCursor(90,100);
+  M5.Lcd.print("Rolling!");
+}
+
+void displayResult(int roll){
+  M5.Lcd.fillScreen(bgColor);
+  int x_mid = 159.5;
+  int y_mid = 119.5;
+
+  int x = x_mid - 2 * DOT_MARGIN - 3 * DOT_RADIUS;
+  int y = y_mid - 2 * DOT_MARGIN - 3 * DOT_RADIUS;
+  int w = (x_mid - x) * 2;
+  int h = (y_mid - y) * 2;
+  int cornRadius = 10;
+
+  int x_TL = x_mid - DOT_MARGIN - 2 * DOT_RADIUS;
+  int y_TL = y_mid - DOT_MARGIN - 2 * DOT_RADIUS;
+
+  int x_BR = x_mid + DOT_MARGIN + 2 * DOT_RADIUS;
+  int y_BR = y_mid + DOT_MARGIN + 2 * DOT_RADIUS;
+  
+  int x_BL = x_mid - DOT_MARGIN - 2 * DOT_RADIUS;
+  int y_BL = y_mid + DOT_MARGIN + 2 * DOT_RADIUS;
+
+  int x_TR = x_mid + DOT_MARGIN + 2 * DOT_RADIUS;
+  int y_TR = y_mid - DOT_MARGIN - 2 * DOT_RADIUS;
+
+  int x_L = x_mid - DOT_MARGIN - 2 * DOT_RADIUS;
+  int y_L = y_mid;
+
+  int x_R = x_mid + DOT_MARGIN + 2 * DOT_RADIUS;
+  int y_R = y_mid;
+  
+  if(roll == 1){
+    M5.Lcd.drawRoundRect(x,y,w,h,cornRadius,dieColor);  
+    M5.Lcd.fillCircle(x_mid,y_mid,DOT_RADIUS,dotColor);
+    
+}
+  if(roll == 2){
+    M5.Lcd.drawRoundRect(x,y,w,h,cornRadius,dieColor);
+    M5.Lcd.fillCircle(x_TL,y_TL,DOT_RADIUS,dotColor);
+    M5.Lcd.fillCircle(x_BR,y_BR,DOT_RADIUS,dotColor);
+    
+}
+  if(roll == 3){
+    M5.Lcd.drawRoundRect(x,y,w,h,cornRadius,dieColor);
+    M5.Lcd.fillCircle(x_BL,y_BL,DOT_RADIUS,dotColor);
+    M5.Lcd.fillCircle(x_mid,y_mid,DOT_RADIUS,dotColor);
+    M5.Lcd.fillCircle(x_TR,y_TR,DOT_RADIUS,dotColor);
+    
+}
+  if(roll == 4){
+    M5.Lcd.drawRoundRect(x,y,w,h,cornRadius,dieColor);
+    M5.Lcd.fillCircle(x_TL,y_TL,DOT_RADIUS,dotColor);
+    M5.Lcd.fillCircle(x_TR,y_TR,DOT_RADIUS,dotColor);
+    M5.Lcd.fillCircle(x_BR,y_BR,DOT_RADIUS,dotColor);
+    M5.Lcd.fillCircle(x_BL,y_BL,DOT_RADIUS,dotColor);
+    
+}
+  if(roll == 5){
+    M5.Lcd.drawRoundRect(x,y,w,h,cornRadius,dieColor);
+    M5.Lcd.fillCircle(x_TL,y_TL,DOT_RADIUS,dotColor);
+    M5.Lcd.fillCircle(x_TR,y_TR,DOT_RADIUS,dotColor);
+    M5.Lcd.fillCircle(x_BR,y_BR,DOT_RADIUS,dotColor);
+    M5.Lcd.fillCircle(x_BL,y_BL,DOT_RADIUS,dotColor);
+    M5.Lcd.fillCircle(x_mid,y_mid,DOT_RADIUS,dotColor);
+ 
+}
+  if(roll == 6){
+    M5.Lcd.drawRoundRect(x,y,w,h,cornRadius,dieColor);
+    M5.Lcd.fillCircle(x_TL,y_TL,DOT_RADIUS,dotColor);
+    M5.Lcd.fillCircle(x_TR,y_TR,DOT_RADIUS,dotColor);
+    M5.Lcd.fillCircle(x_BR,y_BR,DOT_RADIUS,dotColor);
+    M5.Lcd.fillCircle(x_BL,y_BL,DOT_RADIUS,dotColor);
+    M5.Lcd.fillCircle(x_L,y_L,DOT_RADIUS,dotColor);
+    M5.Lcd.fillCircle(x_R,y_R,DOT_RADIUS,dotColor);
+    
+}
+}
+
+void setup() {
+  // Initialize the M5Core2
+  auto cfg = M5.config();
+  M5.begin(cfg);
+  M5.Imu.init();
+  M5.Lcd.fillScreen(bgColor);  
+  introScreen();
+}
+
+void loop() {
+  if(isShaking()){
+    int roll = random(1,7);
+    displayRoll();
+    delay(1000);
+    displayResult(roll);
+    delay(1000);
+    M5.Lcd.setCursor(45, 200);
+    M5.Lcd.setTextColor(tColor);
+    M5.Lcd.setTextSize(tSize);
+    M5.Lcd.print("Shake to Roll Again");
+}
+}
