@@ -1,0 +1,305 @@
+#include "Arduino.h"
+
+// Library for the M5Core2 Module
+#include "M5Unified.h"
+
+#define vertDist 80
+#define horizDist 192
+#define circRad 25 // circle radius
+
+uint16_t bgColor = lgfx::v1::color565(66,242,245);
+uint16_t tColor = lgfx::v1::color565(3,3,3);
+uint16_t displayColor = lgfx::v1::color565(255,0,0);
+uint16_t miniColor = lgfx::v1::color565(51,153,35);
+uint16_t minorColor = lgfx::v1::color565(145,35,153);
+uint16_t majorColor = lgfx::v1::color565(255,215,0);
+uint16_t tColorCash = lgfx::v1::color565(255,0,0);
+
+int miniWin = 20;
+int minorWin = 200;
+int majorWin = 1500;
+int costToPlay = 5;
+int cash = 100;
+int tSize = 3;
+int tSizeCash = 2;
+int tSizeWin = 4;
+
+int absolute1,absolute2,absolute3;
+
+float accX,accY,accZ;
+
+void openScreen(){
+  M5.Lcd.fillScreen(bgColor);
+  M5.Lcd.setTextSize(tSize);
+  M5.Lcd.setTextColor(tColor);
+  M5.Lcd.setCursor(50,100);
+  M5.Lcd.print("Slot Machine");
+  delay(1000);
+  M5.Lcd.setCursor(30,150);
+  M5.Lcd.print("Shake to Begin");
+}
+
+bool isShaking(){
+  M5.Imu.getAccelData(&accX, &accY, &accZ);
+  float totalAcc = sqrt(accX * accX + accY * accY + accZ * accZ);
+  return totalAcc > 2.0;
+}
+
+void rellDisplay(){
+  M5.Lcd.fillScreen(bgColor);
+  M5.Lcd.setTextSize(tSize);
+  M5.Lcd.setTextColor(tColor);
+  M5.Lcd.setCursor(90,100);
+  M5.Lcd.print("Rolling!");
+}
+
+void setScreen(){
+  M5.Lcd.fillScreen(bgColor);
+  M5.Lcd.drawRect(64,80,horizDist,vertDist,displayColor);
+  int bar1 = 64 + 64;
+  int bar2 = bar1 + 64;
+  M5.Lcd.drawFastVLine(bar1,80,vertDist,displayColor);
+  M5.Lcd.drawFastVLine(bar2,80,vertDist,displayColor);
+  M5.Lcd.setTextSize(tSizeCash);
+  M5.Lcd.setTextColor(tColorCash);
+  M5.Lcd.setCursor(10,220);
+  M5.Lcd.print("Money: $");
+  M5.Lcd.print(cash);
+  
+}
+
+void bar1Disp(int abs1){
+  if(abs1 == 1){
+    M5.Lcd.fillCircle(96,120,circRad,miniColor);
+}else if(abs1 == 2){
+  M5.Lcd.fillCircle(96,120,circRad,minorColor);
+}else{
+  M5.Lcd.fillCircle(96,120,circRad,majorColor);
+}
+  M5.Lcd.setTextSize(tSizeCash);
+  M5.Lcd.setTextColor(tColorCash);
+  M5.Lcd.setCursor(10,220);
+  M5.Lcd.print("Money: $");
+  M5.Lcd.print(cash);
+}
+
+void bar2Disp(int abs2){
+  if(abs2 == 1){
+    M5.Lcd.fillCircle(160,120,circRad,miniColor);
+}else if(abs2 == 2){
+  M5.Lcd.fillCircle(160,120,circRad,minorColor);
+}else{
+  M5.Lcd.fillCircle(160,120,circRad,majorColor);
+}
+  M5.Lcd.setTextSize(tSizeCash);
+  M5.Lcd.setTextColor(tColorCash);
+  M5.Lcd.setCursor(10,220);
+  M5.Lcd.print("Money: $");
+  M5.Lcd.print(cash);
+}
+
+void bar3Disp(int abs3){
+  if(abs3 == 1){
+    M5.Lcd.fillCircle(224,120,circRad,miniColor);
+}else if(abs3 == 2){
+  M5.Lcd.fillCircle(224,120,circRad,minorColor);
+}else{
+  M5.Lcd.fillCircle(224,120,circRad,majorColor);
+}
+  M5.Lcd.setTextSize(tSizeCash);
+  M5.Lcd.setTextColor(tColorCash);
+  M5.Lcd.setCursor(10,220);
+  M5.Lcd.print("Money: $");
+  M5.Lcd.print(cash);
+}
+
+void displayResults(int rell1, int rell2, int rell3){
+  if(rell1 >= 1 && rell1 <= 10){
+    absolute1 = 1;
+}else if(rell1 > 10 && rell1 <= 17){
+  absolute1 = 2;
+}else if(rell1 > 17){
+  absolute1 = 3;
+}
+  if(rell2 >= 1 && rell2 <= 10){
+    absolute2 = 1;
+}else if(rell2 > 10 && rell2 <= 17){
+  absolute2 = 2;
+}else if(rell2 > 17){
+  absolute2 = 3;
+}
+  if(rell3 >= 1 && rell3 <= 10){
+    absolute3 = 1;
+}else if(rell3 > 10 && rell3 <= 17){
+  absolute3 = 2;
+}else if(rell3 > 17){
+  absolute3 = 3;
+}
+  setScreen();
+  bar1Disp(absolute1);
+  delay(1000);
+  bar2Disp(absolute2);
+  delay(1000); // potentially play with
+  bar3Disp(absolute3);
+  if(absolute1 != absolute2 || absolute1 != absolute3 || absolute2 != absolute3){
+    cash = cash - costToPlay;
+    M5.Lcd.fillRect(0,210,320,240,bgColor);
+    M5.Lcd.setTextSize(tSizeCash);
+    M5.Lcd.setTextColor(tColorCash);
+    M5.Lcd.setCursor(10,220);
+    M5.Lcd.print("Money: $");
+    M5.Lcd.print(cash);
+}
+  if(absolute1 == 1 && absolute2 == 1 && absolute3 == 1){
+    cash = cash - costToPlay;
+    M5.Lcd.fillRect(0,210,320,240,miniColor);
+    M5.Lcd.setTextSize(tSizeCash);
+    M5.Lcd.setTextColor(tColorCash);
+    M5.Lcd.setCursor(10,220);
+    M5.Lcd.print("Money: $");
+    M5.Lcd.print(cash);
+    
+    int miniLimit = cash + miniWin;
+    delay(500);
+    for(int i = cash; i <= miniLimit; i = i + 1){
+      M5.Lcd.fillScreen(miniColor);
+      M5.Lcd.setTextColor(tColor);
+      M5.Lcd.setTextSize(tSize);
+      M5.Lcd.setCursor(30,90);
+      M5.Lcd.print("Mini Jackpot!!!");
+      M5.Lcd.setTextSize(tSizeWin);
+      M5.Lcd.setTextColor(tColor);
+      M5.Lcd.setCursor(110,130);
+      M5.Lcd.print("$");
+      M5.Lcd.print(i);
+      delay(200);
+}
+      cash = miniLimit;
+      M5.Lcd.fillRect(0,210,320,240,miniColor);
+      M5.Lcd.setTextSize(tSizeCash);
+      M5.Lcd.setTextColor(tColorCash);
+      M5.Lcd.setCursor(10,220);
+      M5.Lcd.print("Money: $");
+      M5.Lcd.print(cash);
+}
+  if(absolute1 == 2 && absolute2 == 2 && absolute3 == 2){
+    cash = cash - costToPlay;
+    M5.Lcd.fillRect(0,210,320,240,minorColor);
+    M5.Lcd.setTextSize(tSizeCash);
+    M5.Lcd.setTextColor(tColorCash);
+    M5.Lcd.setCursor(10,220);
+    M5.Lcd.print("Money: $");
+    M5.Lcd.print(cash);
+    
+    int minorLimit = cash + minorWin;
+    delay(500);
+    for(int i = cash; i <= minorLimit; i = i + 2){
+      M5.Lcd.fillScreen(minorColor);
+      M5.Lcd.setTextColor(tColor);
+      M5.Lcd.setTextSize(tSize);
+      M5.Lcd.setCursor(30,90);
+      M5.Lcd.print("Minor Jackpot!!!");
+      M5.Lcd.setTextSize(tSizeWin);
+      M5.Lcd.setTextColor(tColor);
+      M5.Lcd.setCursor(110,130);
+      M5.Lcd.print("$");
+      M5.Lcd.print(i);
+      delay(200);
+}
+      cash = minorLimit;
+      M5.Lcd.fillRect(0,210,320,240,minorColor);
+      M5.Lcd.setTextSize(tSizeCash);
+      M5.Lcd.setTextColor(tColorCash);
+      M5.Lcd.setCursor(10,220);
+      M5.Lcd.print("Money: $");
+      M5.Lcd.print(cash);
+} 
+  if(absolute1 == 3 && absolute2 == 3 && absolute3 == 3){
+    cash = cash - costToPlay;
+    M5.Lcd.fillRect(0,210,320,240,majorColor);
+    M5.Lcd.setTextSize(tSizeCash);
+    M5.Lcd.setTextColor(tColorCash);
+    M5.Lcd.setCursor(10,220);
+    M5.Lcd.print("Money: $");
+    M5.Lcd.print(cash);
+    
+    int majorLimit = cash + majorWin;
+    delay(500);
+    for(int i = cash; i <= majorLimit; i = i + 10){
+      M5.Lcd.fillScreen(majorColor);
+      M5.Lcd.setTextColor(tColor);
+      M5.Lcd.setTextSize(tSize);
+      M5.Lcd.setCursor(30,90);
+      M5.Lcd.print("Major Jackpot!!!");
+      M5.Lcd.setTextSize(tSizeWin);
+      M5.Lcd.setTextColor(tColor);
+      M5.Lcd.setCursor(110,130);
+      M5.Lcd.print("$");
+      M5.Lcd.print(i);
+      delay(200);
+}
+      cash = majorLimit;
+      M5.Lcd.fillRect(0,210,320,240,majorColor);
+      M5.Lcd.setTextSize(tSizeCash);
+      M5.Lcd.setTextColor(tColorCash);
+      M5.Lcd.setCursor(10,220);
+      M5.Lcd.print("Money: $");
+      M5.Lcd.print(cash);
+}
+
+  if(cash <= 0){
+  M5.Lcd.fillScreen(bgColor);
+  M5.Lcd.setTextSize(tSize);
+  M5.Lcd.setTextColor(tColor);
+  M5.Lcd.print("Out of Money\n\n");
+  M5.Lcd.print("Refresh to resest");
+}
+}
+
+
+void setup() {
+  // Initialize the M5Core2
+  auto cfg = M5.config();
+  M5.begin(cfg);
+  M5.Imu.init();
+  openScreen();
+}
+
+
+void loop() {
+  if(isShaking()){
+    int rell1 = random(1,21);
+    int rell2 = random(1,21);
+    int rell3 = random(1,21);
+    rellDisplay();
+    delay(1000);
+    displayResults(rell1,rell2,rell3);
+  
+}
+  
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
