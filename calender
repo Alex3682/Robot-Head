@@ -1,0 +1,482 @@
+#include "Arduino.h"
+
+// Library for the M5Core2 Module
+#include "M5Unified.h"
+
+// calender dimentions
+#define CAL_BOX_HEIGHT 25
+#define CAL_BOX_WIDTH 30
+#define CAL_BOX_MARGIN 0;
+#define MONTH_DAY_VERTICAL_MARGIN 15;
+
+// color definitions
+uint16_t bgColor = lgfx::v1::color565(255,255,255);
+uint16_t dayBoxColor = lgfx::v1::color565(255,0,0);
+uint16_t dateBoxColor = lgfx::v1::color565(0,0,255);
+uint16_t borderColor = lgfx::v1::color565(3,3,3);
+uint16_t monthTextColor = lgfx::v1::color565(0,0,255);
+uint16_t marginColor = lgfx::v1::color565(255,255,255);
+uint16_t dayTColor = lgfx::v1::color565(255,255,255);
+
+// calender design variables
+int monthTextSize = 1;
+int calBarWidth = 7 * CAL_BOX_WIDTH;
+int month_x = 10;
+int month_y = 10;
+int calBarHeight = CAL_BOX_HEIGHT;
+int calDisplayWidth = calBarWidth;
+int calDisplayHeight = CAL_BOX_HEIGHT * 7;
+int calDispVertStartPos = month_y + calBarHeight + MONTH_DAY_VERTICAL_MARGIN;
+int dayTSize = 1;
+int todayTSize = 1;
+int todayYearSize = 1;
+int numRows = 6;
+int numCols = 7;
+// day of the week dimentions
+int firstBarX = month_x;
+int firstBarY = calDispVertStartPos;
+int firstBarW = calBarWidth;
+int firstBarH = calDisplayHeight / numCols; 
+// actual day dimentions
+int secondBarX = firstBarX;
+int secondBarY = firstBarY + firstBarH;
+int secondBarW = firstBarW;
+int secondBarH = calDisplayHeight - firstBarH;
+// vertical margins for the calender display
+int firstVMarginX = month_x;
+int firstVMarginY = calDispVertStartPos;
+int firstVMarginW = calBarWidth / 7;
+int firstVMarginH = calDisplayHeight;
+int VMargF = calBarWidth + month_x;
+
+// horizontal margins for the calender display
+int firstHMarginX = month_x;
+int firstHMarginY = calDispVertStartPos;
+int firstHMarginL = calBarWidth;
+int HMargF = calDispVertStartPos + calDisplayHeight;
+int fillMarg1X;
+int fillMarg1Y;
+int fillMarg1W;
+int fillMarg1H;
+int fillMarg2X;
+int fillMarg2Y;
+int fillMarg2W;
+int fillMarg2H;
+
+// day of the week cursor variables
+int x_day_monday = month_x + 4;
+int x_day_tuesday = x_day_monday + CAL_BOX_WIDTH;
+int x_day_wednesday = x_day_tuesday + CAL_BOX_WIDTH;
+int x_day_thursday = x_day_wednesday + CAL_BOX_WIDTH;
+int x_day_friday = x_day_thursday + CAL_BOX_WIDTH;
+int x_day_saturday = x_day_friday + CAL_BOX_WIDTH;
+int x_day_sunday = x_day_saturday + CAL_BOX_WIDTH;
+int y_day = calDispVertStartPos + 8;
+
+// todays date variables (most likley temperoary for now)
+int todayDay = 20;
+int todayMonth = 1;
+int todayYear = 2024;
+
+// day counting variables
+int daysInWeek = 7;
+int daysInJan = 31;
+int daysInMonthRem;
+int xCordJan;
+int yCordJan;
+int xCord;
+int yCord = firstBarY + firstBarH + (5 * CAL_BOX_HEIGHT);
+int weekStart, weekFinish;
+int startFilled = 3;
+int startUnfilled = 4;
+int endFilled = 7;
+int endUnfilled = 0;
+
+int daysGoneBy;
+int totalBoxes = 35;
+int daysInYear = 365;
+
+int direction;
+
+const char* monthsOfYear[12] = {"<    January    >", "<    Febuary    >","<     March     >",
+"<     April     >", "<      May      >", "<      June     >", "<      July     >",
+"<     August    >", "<   September   >", "<    October    >", "<   November    >",
+"<   December    >"};
+int daysPerMonth[12] = {31,29,31,30,31,30,31,31,30,31,30,31};
+
+bool forwardLoop = false;
+bool backwardLoop = false;
+bool displayLoop = false;
+
+// sideBar Variables
+int xCordSide = month_x + calBarWidth;
+int yCordSide = 0;
+int xWidthSide = 320 - xCordSide;
+int yHeightSide = 240;
+
+
+
+// day of the week display
+void dayOfTheWeek(){
+  M5.Lcd.setFont(&FreeSerif9pt7b);
+  M5.Lcd.setTextSize(dayTSize);
+  M5.Lcd.setTextColor(dayTColor);
+  M5.Lcd.setCursor(x_day_monday,y_day);
+  M5.Lcd.print("Mo");
+  M5.Lcd.setCursor(x_day_tuesday,y_day);
+  M5.Lcd.print("Tu");
+  M5.Lcd.setCursor(x_day_wednesday,y_day);
+  M5.Lcd.print("We");
+  M5.Lcd.setCursor(x_day_thursday,y_day);
+  M5.Lcd.print("Th");
+  M5.Lcd.setCursor(x_day_friday,y_day);
+  M5.Lcd.print("Fr");
+  M5.Lcd.setCursor(x_day_saturday,y_day);
+  M5.Lcd.print("Sa");
+  M5.Lcd.setCursor(x_day_sunday,y_day);
+  M5.Lcd.print("Su");
+}
+
+// todays date display located on top right corner
+void dispTodaysDate(){
+  M5.Lcd.setFont(&FreeSerif9pt7b);
+  M5.Lcd.fillRect(xCordSide,yCordSide,xWidthSide,yHeightSide,bgColor);
+  M5.Lcd.setTextSize(todayTSize);
+  M5.Lcd.setTextColor(monthTextColor);
+  M5.Lcd.setCursor(235,15);
+  M5.Lcd.print(todayMonth);
+  M5.Lcd.print("/");
+  M5.Lcd.println(todayDay);
+  M5.Lcd.setFont(&FreeSerif18pt7b);
+  M5.Lcd.setTextSize(todayYearSize);
+  M5.Lcd.setCursor(235,35);
+  M5.Lcd.print(todayYear);
+}
+
+void displayDaysForward(){
+ if(!forwardLoop){
+  if(endUnfilled == 0 && endFilled == 7){
+    startUnfilled = 0;
+}else{
+    startUnfilled = endFilled;
+}
+  startFilled = daysInWeek - startUnfilled;
+  endUnfilled = 35 - daysPerMonth[todayMonth - 1] - startUnfilled;
+  if(endUnfilled < 0){
+    endUnfilled = 42 - daysPerMonth[todayMonth - 1] - startUnfilled;
+}
+  endFilled = daysInWeek - endUnfilled;
+  xCord = month_x + 11 + (startUnfilled * CAL_BOX_WIDTH);
+  yCord = firstBarY + firstBarH + 6;
+  for(int A = 1; A <= daysPerMonth[todayMonth - 1]; A = A + 1){
+    M5.Lcd.setFont(&FreeSerif9pt7b);
+    M5.Lcd.setTextSize(dayTSize);
+    M5.Lcd.setTextColor(dayTColor);
+    M5.Lcd.setCursor(xCord,yCord);
+    M5.Lcd.print(A);
+  if(A == startFilled){
+    xCord = month_x + 11; 
+    yCord = yCord + CAL_BOX_HEIGHT;
+}else if(A == startFilled + 7){
+    if(A <= 9){
+      xCord = month_x + 11;
+      yCord = yCord + CAL_BOX_HEIGHT;
+}else{
+      xCord = month_x + 4;
+      yCord = yCord + CAL_BOX_HEIGHT;
+}
+}else if(A == startFilled + 14){
+    xCord = month_x + 4;
+    yCord = yCord + CAL_BOX_HEIGHT;
+}else if(A == startFilled + 21){
+    xCord = month_x + 4;
+    yCord = yCord + CAL_BOX_HEIGHT;
+}else if(A == startFilled + 28){
+    xCord = month_x + 4;
+    yCord = yCord + CAL_BOX_HEIGHT;
+}else if(A == 9){
+  xCord = xCord + CAL_BOX_WIDTH - 6;
+}else if(A == 19){
+    xCord = xCord + CAL_BOX_WIDTH + 1;  
+}else{
+    xCord = xCord + CAL_BOX_WIDTH;
+}
+}
+}
+ forwardLoop = true;
+}
+
+void displayDaysBackwards(){
+  if(!backwardLoop){
+    if(startUnfilled == 0 && startFilled == 7){
+      endUnfilled = 0;
+      endFilled = 7;
+    }else{
+      endFilled = startUnfilled;  
+      endUnfilled = startFilled;
+    }
+      startUnfilled = 35 - daysPerMonth[todayMonth - 1] - endUnfilled;
+        if(startUnfilled < 0){
+          startUnfilled = 42 - daysPerMonth[todayMonth - 1] - endUnfilled;
+        }
+      startFilled = 7 - startUnfilled;
+      xCord = month_x + 11 + (startUnfilled * CAL_BOX_WIDTH);
+      yCord = firstBarY + firstBarH + 6;
+    for(int A = 1; A <= daysPerMonth[todayMonth - 1]; A = A + 1){
+      M5.Lcd.setFont(&FreeSerif9pt7b);
+      M5.Lcd.setTextSize(dayTSize);
+      M5.Lcd.setTextColor(dayTColor);
+      M5.Lcd.setCursor(xCord,yCord);
+      M5.Lcd.print(A);
+  if(A == startFilled){
+    xCord = month_x + 11; 
+    yCord = yCord + CAL_BOX_HEIGHT;
+}else if(A == startFilled + 7){
+    if(A <= 9){
+      xCord = month_x + 11;
+      yCord = yCord + CAL_BOX_HEIGHT;
+}else{
+      xCord = month_x + 4;
+      yCord = yCord + CAL_BOX_HEIGHT;
+}
+}else if(A == startFilled + 14){
+    xCord = month_x + 4;
+    yCord = yCord + CAL_BOX_HEIGHT;
+}else if(A == startFilled + 21){
+    xCord = month_x + 4;
+    yCord = yCord + CAL_BOX_HEIGHT;
+}else if(A == startFilled + 28){
+    xCord = month_x + 4;
+    yCord = yCord + CAL_BOX_HEIGHT;
+}else if(A == 9){
+  xCord = xCord + CAL_BOX_WIDTH - 6;
+}else if(A == 19){
+    xCord = xCord + CAL_BOX_WIDTH + 1;  
+}else{
+    xCord = xCord + CAL_BOX_WIDTH;
+     }
+   }
+ } 
+ backwardLoop = true;
+}
+
+// test: january 2024
+void grid(const char* monthName){
+  M5.Lcd.setFont(&FreeSerif12pt7b);
+  M5.Lcd.setTextSize(monthTextSize);
+  M5.Lcd.fillRect(month_x,month_y,calBarWidth,calBarHeight + 10,bgColor);
+  M5.Lcd.setTextColor(monthTextColor);
+  M5.Lcd.setCursor(13,18);
+  M5.Lcd.print(monthName);
+  dispTodaysDate();
+  M5.Lcd.fillRect(firstBarX,firstBarY,firstBarW,firstBarH,dayBoxColor);
+  M5.Lcd.fillRect(secondBarX,secondBarY,secondBarW,secondBarH,dateBoxColor);
+  for(int Q = firstVMarginX; Q <= VMargF; Q = Q + firstVMarginW){
+    M5.Lcd.drawFastVLine(Q,firstVMarginY,firstVMarginH,marginColor);
+}
+  for(int P = firstHMarginY; P <= HMargF; P = P + firstBarH){
+    M5.Lcd.drawFastHLine(firstHMarginX,P,calDisplayWidth,marginColor);
+}
+  dayOfTheWeek();
+  if(direction == 1){
+    displayDaysForward();
+}
+  if(direction == 2){
+    displayDaysBackwards();
+}
+}
+
+bool isLeapYear(int todayYear){
+  if(todayYear % 4 == 0){
+    if(todayYear % 100 == 0){
+      if(todayYear % 400 == 0){
+        return true;
+      }else{
+        return false;
+      }
+    }else{
+      return true;
+    }
+  }else{
+    return false;
+  }
+}
+
+
+// calender layout
+void calLayout(){
+ if(M5.BtnB.wasPressed()){
+    direction = 1;
+    todayMonth = todayMonth + 1;
+    if(todayMonth > 12){
+      todayMonth = 1;
+      todayYear = todayYear + 1;
+}
+    if(isLeapYear(todayYear)){
+      daysPerMonth[1] = 29;
+}else{
+    daysPerMonth[1] = 28;
+}
+    forwardLoop = false;  
+    if(todayMonth == 1){
+      grid(monthsOfYear[todayMonth - 1]);
+}  
+    if(todayMonth == 2){
+      grid(monthsOfYear[todayMonth - 1]);
+}
+    if(todayMonth == 3){
+      grid(monthsOfYear[todayMonth - 1]);
+}
+    if(todayMonth == 4){
+      grid(monthsOfYear[todayMonth - 1]);
+}
+    if(todayMonth == 5){
+      grid(monthsOfYear[todayMonth - 1]);
+}
+    if(todayMonth == 6){
+      grid(monthsOfYear[todayMonth - 1]);
+}
+    if(todayMonth == 7){
+      grid(monthsOfYear[todayMonth - 1]);
+}
+    if(todayMonth == 8){
+      grid(monthsOfYear[todayMonth - 1]);
+}
+    if(todayMonth == 9){
+      grid(monthsOfYear[todayMonth - 1]);
+}
+    if(todayMonth == 10){
+      grid(monthsOfYear[todayMonth - 1]);
+}
+    if(todayMonth == 11){
+      grid(monthsOfYear[todayMonth - 1]);
+}
+    if(todayMonth == 12){
+      grid(monthsOfYear[todayMonth - 1]);
+}
+}
+
+  if(M5.BtnA.wasPressed()){
+    direction = 2;
+    todayMonth = todayMonth - 1;
+  if(todayMonth < 1){
+    todayMonth = 12;
+    todayYear = todayYear - 1;
+}
+  if(isLeapYear(todayYear)){
+    daysPerMonth[1] = 29;
+}else{
+    daysPerMonth[1] = 28;
+}
+  backwardLoop = false;
+  if(todayMonth == 1){
+      grid(monthsOfYear[todayMonth - 1]);
+}  
+    if(todayMonth == 2){
+      grid(monthsOfYear[todayMonth - 1]);
+}
+    if(todayMonth == 3){
+      grid(monthsOfYear[todayMonth - 1]);
+}
+    if(todayMonth == 4){
+      grid(monthsOfYear[todayMonth - 1]);
+}
+    if(todayMonth == 5){
+      grid(monthsOfYear[todayMonth - 1]);
+}
+    if(todayMonth == 6){
+      grid(monthsOfYear[todayMonth - 1]);
+}
+    if(todayMonth == 7){
+      grid(monthsOfYear[todayMonth - 1]);
+}
+    if(todayMonth == 8){
+      grid(monthsOfYear[todayMonth - 1]);
+}
+    if(todayMonth == 9){
+      grid(monthsOfYear[todayMonth - 1]);
+}
+    if(todayMonth == 10){
+      grid(monthsOfYear[todayMonth - 1]);
+}
+    if(todayMonth == 11){
+      grid(monthsOfYear[todayMonth - 1]);
+}
+    if(todayMonth == 12){
+      grid(monthsOfYear[todayMonth - 1]);
+}
+}
+
+  if(!displayLoop){
+    direction = 1;
+    if(todayMonth == 1){
+      grid(monthsOfYear[todayMonth - 1]);
+      displayLoop = true;
+}
+    if(todayMonth == 2){
+      grid(monthsOfYear[todayMonth - 1]);
+      displayLoop = true;
+}
+    if(todayMonth == 3){
+      grid(monthsOfYear[todayMonth - 1]);
+      displayLoop = true;
+}
+    if(todayMonth == 4){
+      grid(monthsOfYear[todayMonth - 1]);
+      displayLoop = true;
+}
+    if(todayMonth == 5){
+      grid(monthsOfYear[todayMonth - 1]);
+      displayLoop = true;
+}
+    if(todayMonth == 6){
+      grid(monthsOfYear[todayMonth - 1]);
+      displayLoop = true;
+}
+    if(todayMonth == 7){
+      grid(monthsOfYear[todayMonth - 1]);
+      displayLoop = true;
+}
+    if(todayMonth == 8){
+      grid(monthsOfYear[todayMonth - 1]);
+      displayLoop = true;
+}
+    if(todayMonth == 9){
+      grid(monthsOfYear[todayMonth - 1]);
+      displayLoop = true;
+}
+    if(todayMonth == 10){
+      grid(monthsOfYear[todayMonth - 1]);
+      displayLoop = true;
+}
+    if(todayMonth == 11){
+      grid(monthsOfYear[todayMonth - 1]);
+      displayLoop = true;
+}
+    if(todayMonth == 12){
+      grid(monthsOfYear[todayMonth - 1]);
+      displayLoop = true;
+}
+}
+}
+
+// this code only runs once
+void setup() {
+  // Initialize the M5Core2
+  auto cfg = M5.config();
+  M5.begin(cfg);
+ 
+  // Log message
+  M5_LOGI("Starting M5");
+  
+  // set default background color
+  M5.Lcd.clearDisplay();
+  M5.Lcd.fillScreen(bgColor);
+}
+
+// this code runs in an infinite loop
+void loop() {
+  M5.update();
+  calLayout();
+  delay(100);
+}
