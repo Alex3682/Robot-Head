@@ -1,0 +1,33 @@
+#include "Arduino.h"
+#include "ArduinoJson.h"
+
+// Library for the M5Core2 Module
+#include "M5Unified.h"
+
+
+void setup() {
+  //Serial.begin(9600);
+  //while (!Serial) continue;
+  auto cfg = M5.config();
+  M5.begin(cfg);
+
+  // Log message
+  M5_LOGI("Starting M5");
+  
+  StaticJsonDocument<200> doc;
+  doc["fieldA"] = "dataA";
+  doc["fieldB"] = 12345;
+  JsonArray data = doc.createNestedArray("data");
+  data.add(1.2345);
+  data.add(6.789);
+
+  char buffer[100];
+  serializeJson(doc,buffer);
+  M5_LOGI("%s",buffer);
+}
+
+void loop() {
+  // Log message
+
+  delay(1000);
+}
