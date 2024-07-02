@@ -1,0 +1,95 @@
+#include "Arduino.h"
+
+// Library for the M5Core2 Module
+#include "M5Unified.h"
+#include "WiFi.h"
+#include "time.h"
+
+#define BUTTON_WIDTH 100
+#define BUTTON_HEIGHT 40
+#define BUTTON_X 100
+#define BUTTON_Y 100
+
+
+m5::rtc_datetime_t dt;
+char buf[32];
+static constexpr const char* const wd[] = {"Sun","Mon","Tue","Wed","Thr","Fri","Sat","ERR"};
+
+const char* ssid = "ALEX_OMEN 9227";
+const char* password = "0cV9586-";
+
+const char* ntpServer = "pool.ntp.org";
+const long gmtOffset_sec = 0;
+const int daylightOffset_sec = 3600 * -6;
+
+
+
+ time_t rawtime;
+ struct tm* timeinfo;
+ struct tm timeinfoBuffer;
+ char *result;
+ const char* AMorPM;
+
+// this code only runs once
+
+
+void setup() {
+  // Initialize the M5Core2
+  auto cfg = M5.config();
+  cfg.serial_baudrate = 115200;
+  M5.begin(cfg);
+
+  M5.Lcd.setFont(&FreeSerif12pt7b);
+  M5.Lcd.setTextSize(1);
+
+  if(WiFi.status() == WL_NO_SHIELD){
+    M5.Lcd.println("Wi-Fi Shield Not Preset");
+    while(true);
+  }
+
+  M5.Lcd.printf("Attempting to connect to SSID: ");
+  M5.Lcd.println(ssid);
+
+  WiFi.begin(ssid,password);
+  while(WiFi.status() != WL_CONNECTED){
+    delay(500);
+  }
+
+  M5.Lcd.println("Connected to Wi-Fi");
+ 
+
+  delay(500);
+
+
+ 
+  
+  
+}
+
+// this code runs in an infinite loop
+void loop() {
+  configTime(gmtOffset_sec,daylightOffset_sec,ntpServer);
+  struct tm timeinfo;
+  if(getLocalTime(&timeinfo)){
+    if(timeinfo.tm_hour > 12){
+      timeinfo.tm_hour = timeinfo.tm_hour - 12;
+      AMorPM = "PM";
+    }else{
+      AMorPM = "AM";
+    }
+    M5.Lcd.setCursor(0,0);
+    M5.Lcd.fillRect(0,0,320,80,BLACK);
+    M5.Lcd.printf("Date: %02d/%02d/%04d\n", timeinfo.tm_mon + 1,timeinfo.tm_mday,timeinfo.tm_year + 1900);
+    M5.Lcd.printf("Time: %02d:%02d ", timeinfo.tm_hour,timeinfo.tm_min);
+    M5.Lcd.printf(AMorPM);
+    delay(1000);
+  }
+
+  
+
+  
+  
+
+}
+
+
