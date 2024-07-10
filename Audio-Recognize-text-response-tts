@@ -1,0 +1,33 @@
+import os
+import pygame
+from groq import Groq
+from gtts import gTTS
+
+
+language = 'en'
+model_name = "deepset/roberta-base-squad2"
+
+client = Groq( 
+api_key=os.environ.get("GROQ_API_KEY"),
+)
+filename = os.path.dirname(__file__) + "/ttsMP3.com_VoiceText_2024-7-8_17-7-7.mp3"
+
+with open(filename, "rb") as file:
+    translation = client.audio.translations.create(
+      file=(filename, file.read()),
+      model="whisper-large-v3",
+      prompt="Specify context or spelling",  # Optional
+      response_format="json",  # Optional
+      temperature=0.0  # Optional
+    )
+
+print(response)
+myobj = gTTS(text = response,lang = language, slow = False)
+myobj.save("response.mp3")
+pygame.mixer.init()
+pygame.mixer.music.load("response.mp3")
+pygame.mixer.music.play()
+
+while pygame.mixer.music.get_busy():
+  pygame.time.Clock().tick(10)
+
