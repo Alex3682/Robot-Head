@@ -1,0 +1,8 @@
+from datetime import datetime
+import pytz
+
+now  = datetime.now(pytz.timezone('America/Denver'))
+
+formatted_date_time = now.strftime("%Y-%m-%d %H:%M:%S %Z%z")
+
+print("Current date and time (Mountain Time):", formatted_date_time)
